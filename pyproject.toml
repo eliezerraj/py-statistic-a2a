@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py-statistic-a2a"
+version = "0.1.0"
+description = "A a2a agent in charge of statistic affair."
+dependencies = [
+    "pydantic",
+    "fastapi",
+    "uvicorn",
+    "gunicorn",
+    "numpy",
+]
