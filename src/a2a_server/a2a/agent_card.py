@@ -1,4 +1,4 @@
-from config.settings import settings
+from src.a2a_server.config.settings import settings
 
 AGENT_CARD = {
   "name": settings.APP_NAME,

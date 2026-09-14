@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from config.logger import REQUEST_ID_CTX
+from src.a2a_server.config.logger import REQUEST_ID_CTX
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
