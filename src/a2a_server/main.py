@@ -26,10 +26,6 @@ from opentelemetry.trace.status import Status, StatusCode
 from config.logger import setup_logger
 from config.settings import settings
 
-from src.a2a_server.infrastructure.context.request_context import (
-    get_security_context,
-)
-
 # Setup logging
 setup_logger(settings.LOG_LEVEL, 
              settings.APP_NAME, 
@@ -73,7 +69,7 @@ app.add_middleware(RequestContextMiddleware)
 # ---------------------------------
 # Application Metadata
 # ---------------------------------
-a2AServer = A2AServer()
+a2AServer = A2AServer(settings)
 
 # ---------------------------------
 # API Endpoints
@@ -99,16 +95,13 @@ def a2a_message(a2aRequest: A2ARequest, request: Request) -> A2AResponse:
     with tracer.start_as_current_span("controller.a2a_message") as span:
         """Handle incoming A2A messages."""
         logger.info("func.a2a_message()")
-        
-        security_context = get_security_context()
-        request_id = security_context.x_request_id if security_context else None
-        
+          
         try:
-            envelope: A2AEnvelope = a2aRequest.parse_domain_envelope()
-            logger.info(f"Received envelope: {envelope}")
-
-            response = a2AServer.router(envelope)
-            response_envelope: A2AResponse = A2AResponse.create(request_id=request_id, domain_envelope=response, a2aRequest=a2aRequest)
+            request_envelope: A2AEnvelope = a2aRequest.parse_domain_envelope()
+            
+            response = a2AServer.router(request_envelope)
+            
+            response_envelope: A2AResponse = A2AResponse.create(domain_envelope=response, a2aRequest=a2aRequest)
             
             span.set_status(Status(StatusCode.OK)) 
             return response_envelope
@@ -121,11 +114,11 @@ def a2a_message(a2aRequest: A2ARequest, request: Request) -> A2AResponse:
             # Create error envelope
             error_envelope = A2AEnvelope(
                 source_agent="a2a-server",
-                target_agent=envelope.source_agent,
+                target_agent=request_envelope.source_agent,
                 message_type="error",
                 payload={"error": str(e), "error_type": "A2ARouterError"}
             )
-            return A2AResponse.create(request_id=request_id, domain_envelope=error_envelope, a2aRequest=a2aRequest)
+            return A2AResponse.create(domain_envelope=error_envelope, a2aRequest=a2aRequest)
         
         except A2ARequestError as e:
             span.record_exception(e)
