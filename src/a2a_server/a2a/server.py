@@ -1,4 +1,5 @@
 import logging
+import json
 
 from src.a2a_server.domain.usecase.calculation import compute_statistics, Statistic
 from src.a2a_server.a2a.exception import A2ARequestError, A2ARouterError
@@ -14,10 +15,9 @@ logger = logging.getLogger(__name__)
 
 class A2AServer:
     
-    def __init__(self):
-        self.tracer = tracer
-        self.logger = logger
-        self.logger.info("A2AServer initialized.")
+    def __init__(self, settings):
+        self.settings = settings
+        logger.info("A2AServer initialized.")
     
     def router(self, envelope) -> Statistic:
         with tracer.start_as_current_span("a2a.server.router") as span:
@@ -25,9 +25,18 @@ class A2AServer:
             
             try:
                 if envelope.message_type == "statistics.compute":
-                    self.logger.info("Handling statistics.compute message type.")
+                    logger.info("Handling statistics.compute message type.")
                     
                     response = compute_statistics(envelope.payload["data"])
+                    return response
+                
+                if envelope.message_type == "statistics.agent.status":
+                    logger.info("Handling statistics.agent.status message type.")
+                    
+                    response = {"message": "agent status ok",
+                                "data": json.dumps(self.settings.dict() if hasattr(self.settings, "dict") else self.settings.__dict__),
+                            }
+                    
                     return response
                 else:
                     self.logger.error("Handling unsupported message type.")

@@ -81,18 +81,38 @@ class A2AResponse(BaseModel):
     result: A2AMessage
 
     @classmethod
-    def create(cls, request_id: str, domain_envelope: A2AEnvelope, a2aRequest: A2ARequest) -> "A2AResponse":
+    def create(cls, domain_envelope: Union[A2AEnvelope, BaseModel, dict, str], a2aRequest: A2ARequest) -> "A2AResponse":
+        if isinstance(domain_envelope, BaseModel):
+            envelope_dict = domain_envelope.model_dump()
+        elif isinstance(domain_envelope, str):
+            try:
+                envelope_dict = json.loads(domain_envelope)
+            except json.JSONDecodeError:
+                envelope_dict = {"message": domain_envelope}
+        elif isinstance(domain_envelope, dict):
+            envelope_dict = domain_envelope
+        else:
+            raise TypeError(f"Unsupported domain_envelope type: {type(domain_envelope)}")
+
+        # decode any nested JSON-string values (e.g. data='{"VERSION": "0.1", ...}')
+        for key, value in envelope_dict.items():
+            if isinstance(value, str):
+                try:
+                    envelope_dict[key] = json.loads(value)
+                except json.JSONDecodeError:
+                    pass
+
         incoming_part = a2aRequest.params.message.parts[0]
         # If client sent A2ADataPart, respond with A2ADataPart
         if isinstance(incoming_part, A2ADataPart):
             part = A2ADataPart(
                 kind="data", 
-                data=domain_envelope.model_dump()
+                data=envelope_dict
             )
         else:
             part = A2ATextPart(
                 kind="text", 
-                text=domain_envelope.model_dump_json()
+                text=json.dumps(envelope_dict, default=str)
             )
 
         return cls(
