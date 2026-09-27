@@ -1,5 +1,5 @@
 import json
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, field_serializer
 from typing import Any, Optional, List, Literal, Union
 from uuid import uuid4
 from datetime import datetime, timezone
@@ -16,18 +16,33 @@ class A2AEnvelope(BaseModel):
     payload: Any
 
 class A2ATextPart(BaseModel):
-    kind: Literal["text"] = "text"
+    # excluded from output: the a2a-sdk's protobuf Part schema has no "kind" field
+    kind: Literal["text"] = Field(default="text", exclude=True)
     text: str
 
 class A2ADataPart(BaseModel):
-    kind: Literal["data", "json"]
+    kind: Literal["data", "json"] = Field(default="data", exclude=True)
     data: dict[str, Any]
     
 class A2AMessage(BaseModel):
-    kind: str = "message"
+    # excluded from output: the a2a-sdk's protobuf Message schema has no "kind" field
+    kind: Literal["message"] = Field(default="message", exclude=True)
     messageId: str = Field(default_factory=lambda: str(uuid4()))
     role: Literal["user", "agent"]  # "user" for requests, "agent" for responses
     parts: List[Union[A2ATextPart, A2ADataPart]]
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, value: str) -> str:
+        # the a2a-sdk's protobuf transport sends role as "ROLE_USER"/"ROLE_AGENT"
+        if isinstance(value, str) and value.upper().startswith("ROLE_"):
+            return value[len("ROLE_"):].lower()
+        return value
+
+    @field_serializer("role")
+    def serialize_role(self, value: str) -> str:
+        # the a2a-sdk's protobuf Role enum only accepts "ROLE_USER"/"ROLE_AGENT" on parsing
+        return f"ROLE_{value.upper()}"
 
     def extract_envelope_data(self) -> dict:
         part = self.parts[0]
@@ -75,10 +90,14 @@ class A2ATaskResult(BaseModel):
 class A2AResponseResult(BaseModel):
     task: A2ATaskResult
 
+class A2ASendMessageResult(BaseModel):
+    # matches the a2a-sdk's SendMessageResponse oneof ("task" | "message")
+    message: A2AMessage
+
 class A2AResponse(BaseModel):
     id: str  # Must match the incoming request's ID
     jsonrpc: str = "2.0"
-    result: A2AMessage
+    result: A2ASendMessageResult
 
     @classmethod
     def create(cls, domain_envelope: Union[A2AEnvelope, BaseModel, dict, str], a2aRequest: A2ARequest) -> "A2AResponse":
@@ -117,8 +136,10 @@ class A2AResponse(BaseModel):
 
         return cls(
             id=a2aRequest.id,
-            result=A2AMessage(
-                role="agent",
-                parts=[part]
+            result=A2ASendMessageResult(
+                message=A2AMessage(
+                    role="agent",
+                    parts=[part]
+                )
             )
         )
