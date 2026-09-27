@@ -1,9 +1,5 @@
 import os
 import sys
-from pathlib import Path
-
-# Add project root directory to sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import logging
 import time
@@ -23,8 +19,8 @@ from src.a2a_server.infrastructure.middleware.middleware import RequestContextMi
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 
-from config.logger import setup_logger
-from config.settings import settings
+from src.a2a_server.config.logger import setup_logger
+from src.a2a_server.config.settings import settings
 
 # Setup logging
 setup_logger(settings.LOG_LEVEL, 

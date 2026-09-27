@@ -1,4 +1,4 @@
-from config.settings import settings
+from src.a2a_server.config.settings import settings
 
 AGENT_CARD = {
   "name": settings.APP_NAME,
@@ -12,8 +12,8 @@ AGENT_CARD = {
   "supportedInterfaces": [
     {
       "url": f"{settings.URL_AGENT}/a2a/message",
-      "protocolBinding": "HTTP+JSON",
-      "protocolVersion": settings.VERSION
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
     }
   ],
   "capabilities": {

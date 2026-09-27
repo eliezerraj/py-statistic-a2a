@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from a2a_server.domain.dto.model import Statistic
+from src.a2a_server.domain.dto.model import Statistic
 
 import opentelemetry.trace as trace
 
@@ -36,7 +36,6 @@ def compute_statistics(list_values: list[float]) -> Statistic:
         slope = calc_slope(tps_values)
 
         return Statistic(
-            #population= list_values,
             mean=mean,
             std=std_dev,
             slope=slope,
