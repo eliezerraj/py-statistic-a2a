@@ -8,7 +8,6 @@ export PORT=7600
 
 export URL_AGENT=http://127.0.0.1:7600
 export SESSION_TIMEOUT=700
-export VALIDATE_CONTEXT=false
 
 export LOG_LEVEL=INFO
 export OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317

@@ -1,4 +1,4 @@
-# docker build -t py-statistic-a2a .
+# docker build -t py-statistic-a2a-v2 .
 
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS builder
 
@@ -31,4 +31,4 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1
 
 EXPOSE 8000
-CMD ["python", "-m", "src.mcp_server.main"]
+CMD ["python", "-m", "src.a2a_server.main"]
