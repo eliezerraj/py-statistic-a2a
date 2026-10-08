@@ -114,6 +114,7 @@ def a2a_message(a2aRequest: A2ARequest, request: Request) -> A2AResponse:
         
         try:
             request_envelope: A2AEnvelope = a2aRequest.parse_domain_envelope()
+            
             A2A_MESSAGES_TOTAL.labels(message_type=request_envelope.message_type).inc()            
             
             response = a2AServer.router(request_envelope)

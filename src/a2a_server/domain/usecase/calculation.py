@@ -39,5 +39,6 @@ def compute_statistics(list_values: list[float]) -> Statistic:
             mean=mean,
             std=std_dev,
             slope=slope,
+            sum=float(np.sum(tps_values)),
             count=n
         )
