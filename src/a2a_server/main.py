@@ -32,6 +32,8 @@ from opentelemetry.trace.status import Status, StatusCode
 from src.a2a_server.config.logger import setup_logger
 from src.a2a_server.config.settings import settings
 
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
 # Setup logging
 setup_logger(settings.LOG_LEVEL, 
              settings.APP_NAME, 
@@ -67,6 +69,15 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
     lifespan=lifespan
+)
+
+# Add TrustedHostMiddleware to the FastAPI application
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["py-statistic-a2a-v2",
+                   "localhost",
+                   "127.0.0.1",
+                   "*.a2a-v2"]
 )
 
 # Add middleware to the FastAPI application
