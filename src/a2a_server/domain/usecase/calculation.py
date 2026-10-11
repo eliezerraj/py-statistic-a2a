@@ -20,7 +20,7 @@ def calc_slope(numbers):
     return slope if np.isfinite(slope) else 0.0
 
 def compute_statistics(list_values: list[float]) -> Statistic:
-    with tracer.start_as_current_span("domain.usecase.compute_statistics"):
+    with tracer.start_as_current_span("usecase.compute_statistics"):
         logger.info("def.compute_statistics()" , extra={"list_values": list_values})    
 
         if not list_values:
@@ -39,5 +39,6 @@ def compute_statistics(list_values: list[float]) -> Statistic:
             mean=mean,
             std=std_dev,
             slope=slope,
+            sum=float(np.sum(tps_values)),
             count=n
         )

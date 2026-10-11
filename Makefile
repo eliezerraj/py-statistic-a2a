@@ -2,18 +2,17 @@
 
 export VERSION=0.1
 export ACCOUNT=local:localhost
-export APP_NAME=py-statistic-a2a
+export APP_NAME=py-statistic-a2a-v2
 export HOST=127.0.0.1
 export PORT=7600
 
 export URL_AGENT=http://127.0.0.1:7600
 export SESSION_TIMEOUT=700
-export VALIDATE_CONTEXT=false
 
 export LOG_LEVEL=INFO
 export OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
 export OTEL_STDOUT_LOG_GROUP=True
-export LOG_GROUP=/mnt/c/Eliezer/log/py-statistic-a2a.log
+export LOG_GROUP=/mnt/c/Eliezer/log/py-statistic-a2a-v2.log
 
 # Default target
 all: env activate run

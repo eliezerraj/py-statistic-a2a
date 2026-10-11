@@ -5,4 +5,5 @@ class Statistic(BaseModel):
     count: Optional[int] = None
     mean: Optional[float] = None
     std: Optional[float] = None
+    sum: Optional[float] = None
     slope: Optional[float] = None

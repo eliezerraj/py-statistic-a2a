@@ -1,4 +1,4 @@
-# docker build -t py-statistic-a2a .
+# docker build -t py-statistic-a2a-v2 .
 
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS builder
 
@@ -28,7 +28,10 @@ COPY --from=builder --chown=appuser:appgroup /app/src /app/src
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    OTEL_PYTHON_FASTAPI_EXCLUDED_URLS="/metrics" \
+    OTEL_PYTHON_STARLETTE_EXCLUDED_URLS="/metrics" \
+    OTEL_PYTHON_EXCLUDED_URLS="/metrics"
 
 EXPOSE 8000
-CMD ["python", "-m", "src.mcp_server.main"]
+CMD ["python", "-m", "src.a2a_server.main"]
