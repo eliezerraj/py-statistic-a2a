@@ -11,7 +11,7 @@ export SESSION_TIMEOUT=700
 
 export LOG_LEVEL=INFO
 export OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
-export OTEL_STDOUT_LOG_GROUP=True
+export OTEL_STDOUT_LOG_GROUP=False
 export LOG_GROUP=/mnt/c/Eliezer/log/py-statistic-a2a-v2.log
 
 # Default target

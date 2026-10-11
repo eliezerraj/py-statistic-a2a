@@ -1,5 +1,5 @@
-# py-statistic-a2a
-py-statistic-a2a
+# py-statistic-a2a-v2
+py-statistic-a2a-v2
 
 ### create venv
 ```sh

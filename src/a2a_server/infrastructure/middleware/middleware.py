@@ -59,7 +59,7 @@ class FilteringSpanExporter(SpanExporter):
     
     def force_flush(self, timeout_millis=30000):
         return self.delegate_exporter.force_flush(timeout_millis)
-
+    
 class RequestContextMiddleware(BaseHTTPMiddleware):
     
     def __init__(self, app):
@@ -67,11 +67,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         logger.info("Initializing Middleware SUCCESSFULLY")
 
     async def dispatch(self, request: Request, call_next):
-        
+
         # Skip tracing for excluded paths
         if request.url.path in TRACING_EXCLUDED_PATHS:
             return await call_next(request)
-
+                
         span_name = f"middleware:{request.url.path}"
         with tracer.start_as_current_span(span_name):
             logger.info(f"Processing request: {request}")
