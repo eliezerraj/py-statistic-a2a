@@ -28,7 +28,10 @@ COPY --from=builder --chown=appuser:appgroup /app/src /app/src
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    OTEL_PYTHON_FASTAPI_EXCLUDED_URLS="/metrics" \
+    OTEL_PYTHON_STARLETTE_EXCLUDED_URLS="/metrics" \
+    OTEL_PYTHON_EXCLUDED_URLS="/metrics"
 
 EXPOSE 8000
 CMD ["python", "-m", "src.a2a_server.main"]

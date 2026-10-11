@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "py-statistic-a2a"
+name = "py-statistic-a2a-v2"
 version = "0.1.0"
 description = "A a2a agent in charge of statistic affair."
 dependencies = [
