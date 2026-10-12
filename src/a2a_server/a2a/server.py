@@ -3,6 +3,8 @@ import json
 
 from src.a2a_server.domain.usecase.calculation import compute_statistics, Statistic
 from src.a2a_server.a2a.exception import A2ARequestError, A2ARouterError
+from src.a2a_server.infrastructure.auth.cedar_verifier import CedarVerifier
+from src.a2a_server.domain.dto.apperrs import AuthorizationDeniedError
 
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry import trace
@@ -16,8 +18,11 @@ logger = logging.getLogger(__name__)
 class A2AServer:
     
     def __init__(self, settings):
+        
         self.settings = settings
-        logger.info("A2AServer initialized.")
+        self.cedar_verifier = CedarVerifier()
+        
+        logger.info("A2AServer initialized SUCCESSFULLY")
     
     def router(self, envelope) -> Statistic:
         with tracer.start_as_current_span("a2a.server.router") as span:
@@ -26,6 +31,15 @@ class A2AServer:
             try:
                 if envelope.message_type == "statistics.compute":
                     logger.info("Handling statistics.compute message type.")
+                    
+                    # This will raise AuthorizationDeniedError if not authorized
+                    # (caught by global exception handler in main.py)
+                    self.cedar_verifier.validate(
+                        action="compute.statistics",
+                        resource_type="Statistic",
+                        resource_id="*",
+                        resource_attrs={"data": envelope.payload["data"]},
+                    )
                     
                     response = compute_statistics(envelope.payload["data"])
                     return response
@@ -39,18 +53,14 @@ class A2AServer:
                     
                     return response
                 else:
-                    self.logger.error("Handling unsupported message type.")
-                    message = f"Unsupported message type: {envelope.message_type}"
-                    raise A2ARouterError(message)
+                    logger.error("Unsupported message type: %s", envelope.message_type)
+                    raise A2ARouterError(f"Unsupported message type: {envelope.message_type}")
 
-            except A2ARouterError as e:
-                span.record_exception(e)
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                logger.error("Error A2ARouterError message", exc_info=e)
-                raise e
-            
+            except A2ARouterError:
+                # Re-raise A2A-specific errors (handled at endpoint level)
+                raise
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
-                logger.error("Error uncaugth Exception", exc_info=e)
-                raise e
+                logger.error("Unexpected error in router", exc_info=e)
+                raise

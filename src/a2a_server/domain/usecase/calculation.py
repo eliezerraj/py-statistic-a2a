@@ -1,8 +1,9 @@
 import logging
 import numpy as np
+
 from src.a2a_server.domain.dto.model import Statistic
 
-import opentelemetry.trace as trace
+from opentelemetry import trace
 
 #---------------------------------
 # Configure logging
@@ -20,8 +21,9 @@ def calc_slope(numbers):
     return slope if np.isfinite(slope) else 0.0
 
 def compute_statistics(list_values: list[float]) -> Statistic:
-    with tracer.start_as_current_span("usecase.compute_statistics"):
-        logger.info("def.compute_statistics()" , extra={"list_values": list_values})    
+    logger.info("def.compute_statistics()" , extra={"list_values": list_values})  
+    
+    with tracer.start_as_current_span("usecase.compute_statistics") as span:
 
         if not list_values:
             logger.warning("No values enough provided for statistical computation.")

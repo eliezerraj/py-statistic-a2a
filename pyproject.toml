@@ -19,4 +19,5 @@ dependencies = [
     "opentelemetry-instrumentation-logging",
     "aiohttp",
     "prometheus-client",
+    "cedarpy",
 ]

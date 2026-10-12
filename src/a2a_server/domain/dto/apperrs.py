@@ -1,7 +1,7 @@
 from typing import Optional
 
 class AppError(Exception):
-    
+    """Base class for application-specific errors."""
     def __init__(self, message: str, uri: Optional[str] = None, status_code: Optional[int] = None):
         super().__init__(message)
         self.uri: Optional[str] = uri
@@ -14,3 +14,13 @@ class AppError(Exception):
             "status_code": self.status_code,
             "message": self.message
         }
+
+# Custom exception for invalid access tokens.
+class InvalidAccessTokenError(AppError):
+    pass
+
+class MissingTokenError(AppError):
+    pass
+
+class AuthorizationDeniedError(AppError):
+    pass

@@ -19,6 +19,11 @@ from src.a2a_server.infrastructure.telemetry.metric import (
     IN_FLIGHT_REQUESTS
 )
 
+from src.a2a_server.common.exceptions.auth_error import (
+    InvalidAccessTokenError,
+    AuthorizationDeniedError,
+)
+
 from src.a2a_server.a2a.message_model import A2ARequest, A2AEnvelope, A2AResponse
 from src.a2a_server.a2a.server import A2AServer
 from src.a2a_server.a2a.exception import A2ARequestError, A2ARouterError
@@ -33,6 +38,8 @@ from src.a2a_server.config.logger import setup_logger
 from src.a2a_server.config.settings import settings
 
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.responses import JSONResponse
+from src.a2a_server.config.logger import REQUEST_ID_CTX
 
 # Setup logging
 setup_logger(settings.LOG_LEVEL, 
@@ -84,6 +91,37 @@ app.add_middleware(
 app.add_middleware(RequestContextMiddleware)
 
 # ---------------------------------
+# Exception Handlers (standardized error responses)
+# ---------------------------------
+@app.exception_handler(InvalidAccessTokenError)
+async def invalid_access_token_exception_handler(request: Request, exc: InvalidAccessTokenError):
+    """Handle invalid access token exceptions with standardized 401 response"""
+    request_id = REQUEST_ID_CTX.get() or request.headers.get("x-request-id", "unknown")
+    logger.error(f"Invalid access token error: {exc.message}")
+    
+    error_response = exc.to_dict()
+    
+    return JSONResponse(
+        status_code=exc.status_code or 401,
+        content=error_response,
+        headers={"x-request-id": request_id}
+    )
+
+@app.exception_handler(AuthorizationDeniedError)
+async def authorization_denied_exception_handler(request: Request, exc: AuthorizationDeniedError):
+    """Handle authorization denied exceptions with standardized 403 response"""
+    request_id = REQUEST_ID_CTX.get() or request.headers.get("x-request-id", "unknown")
+    logger.error(f"Authorization denied: {exc.message}")
+    
+    error_response = exc.to_dict()
+    
+    return JSONResponse(
+        status_code=exc.status_code or 403,
+        content=error_response,
+        headers={"x-request-id": request_id}
+    )
+
+# ---------------------------------
 # Application Metadata
 # ---------------------------------
 a2AServer = A2AServer(settings)
@@ -128,6 +166,8 @@ def a2a_message(a2aRequest: A2ARequest, request: Request) -> A2AResponse:
             
             A2A_MESSAGES_TOTAL.labels(message_type=request_envelope.message_type).inc()            
             
+            # Route the message - auth exceptions (InvalidAccessTokenError, AuthorizationDeniedError)
+            # will be caught by global exception handlers and return standardized 401/403 responses
             response = a2AServer.router(request_envelope)
             
             response_envelope: A2AResponse = A2AResponse.create(domain_envelope=response, a2aRequest=a2aRequest)
@@ -142,7 +182,7 @@ def a2a_message(a2aRequest: A2ARequest, request: Request) -> A2AResponse:
             span.set_status(Status(StatusCode.ERROR, str(e)))
             logger.error("Error A2ARouterError message", exc_info=e)
             
-            # Create error envelope
+            # Create error envelope for A2A-specific router errors
             error_envelope = A2AEnvelope(
                 source_agent="a2a-server",
                 target_agent=request_envelope.source_agent,
@@ -160,7 +200,7 @@ def a2a_message(a2aRequest: A2ARequest, request: Request) -> A2AResponse:
         except Exception as e:
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
-            logger.error("Error uncaugth Exception", exc_info=e)
+            logger.error("Error uncaught Exception", exc_info=e)
             raise e
         
         finally:
