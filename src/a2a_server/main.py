@@ -24,9 +24,13 @@ from src.a2a_server.common.exceptions.auth_error import (
     AuthorizationDeniedError,
 )
 
+from src.a2a_server.common.exceptions.a2a_server import (
+    A2ARequestError,
+    A2ARouterError,
+)
+
 from src.a2a_server.a2a.message_model import A2ARequest, A2AEnvelope, A2AResponse
 from src.a2a_server.a2a.server import A2AServer
-from src.a2a_server.a2a.exception import A2ARequestError, A2ARouterError
 from src.a2a_server.infrastructure.telemetry.tracer import setup_tracer
 from src.a2a_server.a2a.agent_card import AGENT_CARD as agent
 from src.a2a_server.infrastructure.middleware.middleware import RequestContextMiddleware

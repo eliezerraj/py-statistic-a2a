@@ -2,9 +2,16 @@ import logging
 import json
 
 from src.a2a_server.domain.usecase.calculation import compute_statistics, Statistic
-from src.a2a_server.a2a.exception import A2ARequestError, A2ARouterError
 from src.a2a_server.infrastructure.auth.cedar_verifier import CedarVerifier
-from src.a2a_server.domain.dto.apperrs import AuthorizationDeniedError
+
+from src.a2a_server.common.exceptions.auth_error import (
+    InvalidAccessTokenError,
+    AuthorizationDeniedError,
+)
+from src.a2a_server.common.exceptions.a2a_server import (
+    A2ARequestError,
+    A2ARouterError,
+)
 
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry import trace
@@ -34,12 +41,16 @@ class A2AServer:
                     
                     # This will raise AuthorizationDeniedError if not authorized
                     # (caught by global exception handler in main.py)
-                    self.cedar_verifier.validate(
-                        action="compute.statistics",
-                        resource_type="Statistic",
-                        resource_id="*",
-                        resource_attrs={"data": envelope.payload["data"]},
-                    )
+                    
+                    if self.settings.AUTHORIZATION_DRY_RUN:
+                        logger.info("Authorization dry run enabled, skipping Cedar verification.")
+                    else:
+                        self.cedar_verifier.validate(
+                            action="send_message",
+                            resource_type="MessageType",
+                            resource_id=envelope.message_type,
+                            resource_attrs={"data": envelope.payload["data"]},
+                        )
                     
                     response = compute_statistics(envelope.payload["data"])
                     return response

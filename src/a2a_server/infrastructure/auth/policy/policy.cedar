@@ -1,10 +1,3 @@
-//
-// Global tenant-isolation rule.
-//
-// A principal may not access resources belonging to another tenant,
-// regardless of any permit policy.
-//
-
 forbid(
     principal,
     action == Action::"send_message",
@@ -21,6 +14,15 @@ permit(
 )
 when {
     principal.scopes.contains(
-        "statistics.compute"
+        "statistics:compute"
     )
+};
+
+permit(
+    principal,
+    action == Action::"statistics.compute",
+    resource == Statistic::"*"
+)
+when {
+    principal.scopes.contains("statistics:compute")
 };

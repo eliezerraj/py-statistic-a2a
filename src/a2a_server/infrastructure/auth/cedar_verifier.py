@@ -34,10 +34,9 @@ class CedarVerifier:
             file_path = base_path / "a2a_server/infrastructure/auth/policy/policy.cedar"
                 
             policy_text = Path(file_path).read_text(encoding="utf-8")
+            self.policy_set = PolicySet.from_str(policy_text)
             
-            self._policy_set = PolicySet.from_str(policy_text)
-            
-            logger.info("Policy file read successfully: %s", self._policy_set)
+            logger.info("Policy file read successfully: %s", self.policy_set)
             
         except Exception as e:
             logger.error(f"Failed to read policy file {file_path}: {e}")
@@ -54,8 +53,9 @@ class CedarVerifier:
     ) -> None:
 
         with tracer.start_as_current_span("cedar_verifier.validate") as span:
+            
             security = get_security_context()
-
+            
             request = {
                 "principal":
                     f'Client::"{security.subject}"',
@@ -65,6 +65,10 @@ class CedarVerifier:
                     f'{resource_type}::"{resource_id}"',
                 "context": context or {},
             }
+
+            print("==============================")
+            print("Request: %s", request)
+            print("==============================")
 
             entities = [
                 {
@@ -91,12 +95,19 @@ class CedarVerifier:
                     "parents": [],
                 },
             ]
-
+            print("==============================")
+            print("Entities: %s", entities)
+            print("==============================")
+            
             result = is_authorized(
                 request=request,
-                policies=self._policy_set,
+                policies=self.policy_set,
                 entities=entities,
             )
+
+            print("==============================")
+            print("Authorization result: %s", result.allowed)
+            print("==============================")
 
             if not result.allowed:
                 logger.warning("Authorization denied for action=%s, resource_type=%s, resource_id=%s",action,resource_type,resource_id)
