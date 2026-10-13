@@ -72,13 +72,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     
     def __init__(self, app):
         super().__init__(app)
-        
         self._token_verifier = JwtTokenVerifier(
             issuer=settings.AUTHORIZATION_ISSUER,
             audience=settings.AUTHORIZATION_AUDIENCE,
             jwks_url=settings.AUTHORIZATION_JWKS_URL,
         )
-        
         logger.info("Initializing Middleware SUCCESSFULLY")
 
     async def dispatch(self, request: Request, call_next):                

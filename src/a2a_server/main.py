@@ -24,7 +24,7 @@ from src.a2a_server.common.exceptions.auth_error import (
     AuthorizationDeniedError,
 )
 
-from src.a2a_server.common.exceptions.a2a_server import (
+from src.a2a_server.common.exceptions.a2a_error import (
     A2ARequestError,
     A2ARouterError,
 )
