@@ -67,11 +67,13 @@ class A2AServer:
                     logger.error("Unsupported message type: %s", envelope.message_type)
                     raise A2ARouterError(f"Unsupported message type: {envelope.message_type}")
 
-            except A2ARouterError:
-                # Re-raise A2A-specific errors (handled at endpoint level)
+            except A2ARouterError as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                logger.error("Error A2ARouterError message", exc_info=e)
                 raise
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
-                logger.error("Unexpected error in router", exc_info=e)
+                logger.error("Unexpected error in server router", exc_info=e)
                 raise

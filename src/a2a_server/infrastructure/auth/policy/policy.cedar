@@ -17,12 +17,3 @@ when {
         "statistics:compute"
     )
 };
-
-permit(
-    principal,
-    action == Action::"statistics.compute",
-    resource == Statistic::"*"
-)
-when {
-    principal.scopes.contains("statistics:compute")
-};

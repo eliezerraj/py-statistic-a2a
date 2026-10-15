@@ -30,7 +30,8 @@ from src.a2a_server.common.exceptions.auth_error import (
 tracer = trace.get_tracer(__name__)
 logger = logging.getLogger(__name__)
 
-TRACING_EXCLUDED_PATHS = ["/metrics", "/health", "/readiness", "/v1/info"]
+TRACING_EXCLUDED_PATHS = ["/metrics", "/health"]
+AUTHORIZATION_EXCLUDED_PATHS = ["/metrics", "/health", "/v1/info", "/.well-known/agent-card.json"]
 
 class FilteringSpanExporter(SpanExporter):
     """Filters out spans from excluded paths before export"""
@@ -70,6 +71,7 @@ class FilteringSpanExporter(SpanExporter):
     
 class RequestContextMiddleware(BaseHTTPMiddleware):
     
+    # Initialize the middleware with the application and token verifier
     def __init__(self, app):
         super().__init__(app)
         self._token_verifier = JwtTokenVerifier(
@@ -79,27 +81,35 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         )
         logger.info("Initializing Middleware SUCCESSFULLY")
 
-    async def dispatch(self, request: Request, call_next):                
+    # Process each incoming request through the middleware
+    async def dispatch(self, request: Request, call_next):
+        
+        # Step 1: Generate or retrieve request ID for tracing
+        request_id = request.headers.get("x-request-id", str(uuid.uuid4())) 
+        REQUEST_ID_CTX.set(request_id)
+
+        # Step 2: Skip auth for excluded paths    
+        if request.url.path in TRACING_EXCLUDED_PATHS:
+            response = await call_next(request)
+            response.headers["x-request-id"] = request_id
+            return response
+                        
         span_name = f"middleware:{request.url.path}"
         with tracer.start_as_current_span(span_name) as span:
             logger.info(f"Processing dispatch for request: {request.url.path}")
             
-            # Step 1: Generate or retrieve request ID for tracing
-            request_id = request.headers.get("x-request-id", str(uuid.uuid4())) 
-            REQUEST_ID_CTX.set(request_id)
-            
-            # Step 2: Propagate request ID in span and baggage
+            # Step 3: Propagate request ID in span and baggage
             span = trace.get_current_span()
             set_baggage("http.request.id", request_id)
             span.set_attribute("http.request.id", request_id)
             
-            # Step 3: Skip auth for excluded paths
-            if request.url.path in TRACING_EXCLUDED_PATHS:
+            # Step 4: Skip auth for excluded paths
+            if request.url.path in AUTHORIZATION_EXCLUDED_PATHS:
                 response = await call_next(request)
                 response.headers["x-request-id"] = request_id
                 return response
             
-            # Step 4: Extract authentication token
+            # Step 5: Extract authentication token
             auth_header = request.headers.get("Authorization")
             auth_token = None
             if auth_header and auth_header.startswith("Bearer "):
@@ -107,7 +117,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             
             logger.info(f"Processing request with auth_token present: {bool(auth_token)}")
             
-            # Step 5: Verify token and create SecurityContext with ALL verified data at once
+            # Step 6: Verify token and create SecurityContext with ALL verified data at once
             sec_context = None
             if not settings.AUTHORIZATION_DRY_RUN:
                 logger.info("Performing token verification")
