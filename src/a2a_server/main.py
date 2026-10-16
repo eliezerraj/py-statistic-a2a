@@ -10,7 +10,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
 
+from prometheus_client import start_http_server
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+
 from src.a2a_server.infrastructure.telemetry.metric import (
     HTTP_REQUESTS_TOTAL,
     HTTP_REQUEST_DURATION_SECONDS,
@@ -63,8 +65,11 @@ tracer = trace.get_tracer(__name__)
 # ---------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("func.lifespan()")
     logger.info(" **** Starting up the application...")
+    logger.info(f" **** Metrics server will start at {settings.METRICS_HOST}:{settings.METRICS_PORT}")
+    
+    start_http_server(int(settings.METRICS_PORT), addr=settings.METRICS_HOST)
+
     yield
     logger.info(" **** Shutting down the application...")
     logger.info(" **** Closing resources (5 seconds)...")
@@ -81,7 +86,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add TrustedHostMiddleware to the FastAPI application
+# ---------------------------------
+# Middleware
+# ---------------------------------
 app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=["py-statistic-a2a-v2",
@@ -92,7 +99,6 @@ app.add_middleware(
                    "*.a2a-v2"]
 )
 
-# Add middleware to the FastAPI application
 app.add_middleware(RequestContextMiddleware)
 
 # ---------------------------------
@@ -162,13 +168,6 @@ a2AServer = A2AServer(settings)
 # ---------------------------------
 # API Endpoints
 # ---------------------------------
-@app.get("/metrics")
-def metrics():
-    return Response(
-        content=generate_latest(),
-        media_type=CONTENT_TYPE_LATEST
-    )
-
 @app.get("/health")
 def health():
     return Response(
@@ -240,7 +239,9 @@ def a2a_message(a2aRequest: A2ARequest, request: Request) -> A2AResponse:
             HTTP_REQUEST_DURATION_SECONDS.labels(method="POST",endpoint="/a2a/message").observe(time.time() - start)
             IN_FLIGHT_REQUESTS.dec()
 
-# Server entrypoint function
+# ---------------------------------
+# Entrypoint
+# ---------------------------------
 def run():
     """Server entrypoint execution handler."""
     try:
